@@ -1,0 +1,22 @@
+import { z } from "zod";
+
+export const gastoSchema = z.object({
+  centroCostoId: z.string().min(1, "Centro de costo requerido"),
+  tipo: z.enum(["ALQUILER", "DEPRECIACION", "SUMINISTROS", "SERVICIOS", "SEGUROS", "OTRO"]),
+  concepto: z.string().min(1, "Concepto requerido"),
+  monto: z.coerce.number().positive("Monto debe ser positivo"),
+  frecuencia: z.enum(["MENSUAL", "TRIMESTRAL", "ANUAL"]),
+  fechaInicio: z.string().min(1, "Fecha de inicio requerida"),
+});
+
+export const activoSchema = z.object({
+  centroCostoId: z.string().min(1, "Centro de costo requerido"),
+  nombre: z.string().min(1, "Nombre requerido"),
+  valorAdquisicion: z.coerce.number().positive("Valor debe ser positivo"),
+  valorResidual: z.coerce.number().min(0).default(0),
+  vidaUtilMeses: z.coerce.number().int().positive("Vida útil requerida"),
+  fechaAdquisicion: z.string().min(1, "Fecha requerida"),
+});
+
+export type GastoFormValues = z.infer<typeof gastoSchema>;
+export type ActivoFormValues = z.infer<typeof activoSchema>;

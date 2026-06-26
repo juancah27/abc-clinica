@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  relationMode = "prisma"
+}
+
+enum RolEmpleado {
+  MEDICO
+  ENFERMERA
+  ADMINISTRATIVO
+  TECNICO
+  LIMPIEZA
+  OTRO
+}
+
+enum TipoGastoGeneral {
+  ALQUILER
+  DEPRECIACION
+  SUMINISTROS
+  SERVICIOS
+  SEGUROS
+  OTRO
+}
+
+enum TipoInductor {
+  TIEMPO_MINUTOS
+  CANTIDAD_PACIENTES
+  METROS_CUADRADOS
+  NUMERO_EQUIPOS
+  HORAS_MAQUINA
+  CUSTOM
+}
+
+enum CategoriaActividad {
+  CLINICA_DIRECTA
+  CLINICA_APOYO
+  OPERATIVA
+  ADMINISTRATIVA
+}
+
+enum PeriodoFrecuencia {
+  MENSUAL
+  TRIMESTRAL
+  ANUAL
+}
+
+model Departamento {
+  id          String     @id @default(cuid())
+  nombre      String     @unique
+  descripcion String?
+  empleados   Empleado[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Empleado {
+  id              String                  @id @default(cuid())
+  codigo          String                  @unique
+  nombreCompleto  String
+  rol             RolEmpleado
+  departamentoId  String
+  departamento    Departamento            @relation(fields: [departamentoId], references: [id])
+  activo          Boolean                 @default(true)
+  fechaIngreso    DateTime
+  compensacion    EstructuraCompensacion?
+  costosHora      CostoHoraCalculado[]
+  asignaciones    AsignacionRecursoActividad[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+}
+
+model EstructuraCompensacion {
+  id                    String    @id @default(cuid())
+  empleadoId            String    @unique
+  empleado              Empleado  @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  salarioBase           Decimal   @db.Decimal(12, 2)
+  moneda                String    @default("USD")
+  horasSemanales        Decimal   @db.Decimal(5, 2)
+  semanasAnuales        Int       @default(48)
+  porcentajeBeneficios  Decimal   @db.Decimal(5, 2)
+  vigenteDesde          DateTime
+  vigenteHasta          DateTime?
+  beneficios            Beneficio[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Beneficio {
+  id              String                 @id @default(cuid())
+  compensacionId  String
+  compensacion    EstructuraCompensacion @relation(fields: [compensacionId], references: [id], onDelete: Cascade)
+  nombre          String
+  montoAnual      Decimal                @db.Decimal(12, 2)
+  createdAt       DateTime               @default(now())
+}
+
+model CostoHoraCalculado {
+  id              String    @id @default(cuid())
+  empleadoId      String
+  empleado        Empleado  @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  periodo         String
+  costoHora       Decimal   @db.Decimal(10, 4)
+  horasAnuales    Decimal   @db.Decimal(8, 2)
+  costoAnualTotal Decimal   @db.Decimal(14, 2)
+  calculadoEn     DateTime  @default(now())
+
+  @@unique([empleadoId, periodo])
+}
+
+model CentroCosto {
+  id          String        @id @default(cuid())
+  codigo      String        @unique
+  nombre      String
+  descripcion String?
+  gastos      GastoGeneral[]
+  activos     ActivoDepreciable[]
+  inductores  InductorActividad[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model GastoGeneral {
+  id            String           @id @default(cuid())
+  centroCostoId String
+  centroCosto   CentroCosto      @relation(fields: [centroCostoId], references: [id])
+  tipo          TipoGastoGeneral
+  concepto      String
+  monto         Decimal          @db.Decimal(14, 2)
+  frecuencia    PeriodoFrecuencia
+  fechaInicio   DateTime
+  fechaFin      DateTime?
+  activo        Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model ActivoDepreciable {
+  id                String              @id @default(cuid())
+  centroCostoId     String
+  centroCosto       CentroCosto         @relation(fields: [centroCostoId], references: [id])
+  nombre            String
+  valorAdquisicion  Decimal             @db.Decimal(14, 2)
+  valorResidual     Decimal             @db.Decimal(14, 2) @default(0)
+  vidaUtilMeses     Int
+  fechaAdquisicion  DateTime
+  depreciaciones    DepreciacionMensual[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model DepreciacionMensual {
+  id          String            @id @default(cuid())
+  activoId    String
+  activo      ActivoDepreciable @relation(fields: [activoId], references: [id], onDelete: Cascade)
+  periodo     String
+  monto       Decimal           @db.Decimal(12, 2)
+
+  @@unique([activoId, periodo])
+}
+
+model Actividad {
+  id                String              @id @default(cuid())
+  codigo            String              @unique
+  nombre            String
+  descripcion       String?
+  categoria         CategoriaActividad
+  activa            Boolean             @default(true)
+  inductores        InductorActividad[]
+  asignaciones      AsignacionRecursoActividad[]
+  ejecuciones       EjecucionActividad[]
+  materiales        RecursoActividad[]
+  resultados        ResultadoCosteo[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model RecursoActividad {
+  id            String    @id @default(cuid())
+  actividadId   String
+  actividad     Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  nombre        String
+  costoUnitario Decimal   @db.Decimal(10, 2)
+  unidad        String    @default("unidad")
+  createdAt     DateTime  @default(now())
+}
+
+model AsignacionRecursoActividad {
+  id                  String    @id @default(cuid())
+  actividadId         String
+  actividad           Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  empleadoId          String
+  empleado            Empleado  @relation(fields: [empleadoId], references: [id])
+  minutosPorEjecucion Decimal   @db.Decimal(8, 2)
+  esPrincipal         Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([actividadId, empleadoId])
+}
+
+model Inductor {
+  id          String           @id @default(cuid())
+  codigo      String           @unique
+  nombre      String
+  tipo        TipoInductor
+  unidad      String
+  descripcion String?
+  actividades InductorActividad[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model InductorActividad {
+  id             String       @id @default(cuid())
+  inductorId     String
+  inductor       Inductor     @relation(fields: [inductorId], references: [id])
+  actividadId    String
+  actividad      Actividad    @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  centroCostoId  String?
+  centroCosto    CentroCosto? @relation(fields: [centroCostoId], references: [id])
+  pesoAsignacion Decimal      @db.Decimal(5, 2) @default(100)
+  createdAt      DateTime     @default(now())
+
+  @@unique([inductorId, actividadId])
+}
+
+model EjecucionActividad {
+  id           String    @id @default(cuid())
+  actividadId  String
+  actividad    Actividad @relation(fields: [actividadId], references: [id])
+  periodo      String
+  volumen      Decimal   @db.Decimal(12, 2)
+  notas        String?
+  registradoEn DateTime  @default(now())
+
+  @@unique([actividadId, periodo])
+}
+
+model ResultadoCosteo {
+  id                    String    @id @default(cuid())
+  actividadId           String
+  actividad             Actividad @relation(fields: [actividadId], references: [id])
+  periodo               String
+  costoDirectoPersonal  Decimal   @db.Decimal(14, 2)
+  costoOverhead         Decimal   @db.Decimal(14, 2)
+  costoMateriales       Decimal   @db.Decimal(14, 2)
+  costoTotal            Decimal   @db.Decimal(14, 2)
+  costoUnitario         Decimal   @db.Decimal(14, 4)
+  volumen               Decimal   @db.Decimal(12, 2)
+  margenReferencia      Decimal?  @db.Decimal(14, 2)
+  calculadoEn           DateTime  @default(now())
+
+  @@unique([actividadId, periodo])
+}
