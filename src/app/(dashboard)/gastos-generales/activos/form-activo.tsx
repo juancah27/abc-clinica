@@ -75,17 +75,17 @@ export function FormActivo({ centrosCosto }: FormActivoProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="valorAdquisicion">Valor de Adquisición</Label>
-          <Input id="valorAdquisicion" type="number" step="0.01" {...form.register("valorAdquisicion")} />
+          <Input id="valorAdquisicion" type="number" step="0.01" {...form.register("valorAdquisicion", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="valorResidual">Valor Residual</Label>
-          <Input id="valorResidual" type="number" step="0.01" {...form.register("valorResidual")} />
+          <Input id="valorResidual" type="number" step="0.01" {...form.register("valorResidual", { valueAsNumber: true })} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="vidaUtilMeses">Vida Útil (meses)</Label>
-          <Input id="vidaUtilMeses" type="number" {...form.register("vidaUtilMeses")} />
+          <Input id="vidaUtilMeses" type="number" {...form.register("vidaUtilMeses", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="fechaAdquisicion">Fecha de Adquisición</Label>

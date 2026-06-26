@@ -106,7 +106,7 @@ export function GastoForm({ centrosCosto }: GastoFormProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="monto">Monto</Label>
-          <Input id="monto" type="number" step="0.01" {...form.register("monto")} />
+          <Input id="monto" type="number" step="0.01" {...form.register("monto", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="frecuencia">Frecuencia</Label>
